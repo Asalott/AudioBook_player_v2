@@ -1,0 +1,22 @@
+# systemd *user* service (audio needs the user's PipeWire/PulseAudio session).
+# Installed by deploy/install.sh to ~/.config/systemd/user/audiobook.service
+[Unit]
+Description=Ljudboksspelare (Flask + VLC)
+After=network.target sound.target pipewire.service
+
+[Service]
+Type=simple
+WorkingDirectory=@APP_DIR@
+ExecStart=@APP_DIR@/.venv/bin/python @APP_DIR@/Main.py
+Environment=PYTHONUNBUFFERED=1
+Environment=ABP_LOG_LEVEL=WARNING
+# Environment=ABP_BOOKS_DIR=/media/usb/ljudbocker
+# SIGTERM -> the app saves position and statistics before exiting.
+KillSignal=SIGTERM
+TimeoutStopSec=15
+Restart=on-failure
+RestartSec=3
+Nice=-5
+
+[Install]
+WantedBy=default.target

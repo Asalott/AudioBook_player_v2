@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Ljudböcker</title>
+<script>
+  // Set the theme before first paint (no flash). The server value wins later.
+  try { const t = localStorage.getItem("abp-theme-resolved"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<link rel="stylesheet" href="/static/app.css?v=__V__">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-books" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h3v18H6a2 2 0 0 1-2-1.5z"/><path d="M9 3h4v18H9"/><path d="m15 4.5 3.3-.9 2.9 16-3.3.9z"/></symbol>
+    <symbol id="i-headphones" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="5" height="7" rx="2"/><rect x="16" y="14" width="5" height="7" rx="2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><rect x="5" y="11" width="3.5" height="6" rx="1"/><rect x="10.25" y="6" width="3.5" height="11" rx="1"/><rect x="15.5" y="13" width="3.5" height="4" rx="1"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.8v14.4a1 1 0 0 0 1.5.9l11.6-7.2a1 1 0 0 0 0-1.8L8.5 3.9A1 1 0 0 0 7 4.8z" fill="currentColor"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6" y="4.5" width="4.2" height="15" rx="1.4" fill="currentColor"/><rect x="13.8" y="4.5" width="4.2" height="15" rx="1.4" fill="currentColor"/></symbol>
+    <symbol id="i-prev" viewBox="0 0 24 24" fill="currentColor"><rect x="4.5" y="5" width="2.4" height="14" rx="1.2"/><path d="M19.5 6.2v11.6a1 1 0 0 1-1.6.8l-8.3-5.8a1 1 0 0 1 0-1.6l8.3-5.8a1 1 0 0 1 1.6.8z"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24" fill="currentColor"><rect x="17.1" y="5" width="2.4" height="14" rx="1.2"/><path d="M4.5 6.2v11.6a1 1 0 0 0 1.6.8l8.3-5.8a1 1 0 0 0 0-1.6L6.1 5.4a1 1 0 0 0-1.6.8z"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 3.5v3.7h3.7"/></symbol>
+    <symbol id="i-fwd" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 3.5v3.7h-3.7"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14.5-4.5L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.5 4.5L20 16"/><path d="M20 20.5V16h-4.5"/></symbol>
+    <symbol id="i-sort" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M3.5 16.5 7 20l3.5-3.5M17 20V4M13.5 7.5 17 4l3.5 3.5"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5z"/><path d="M12 6.5v13"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <nav class="rail" aria-label="Huvudmeny">
+    <button class="rail-btn pressable" data-nav="library"><svg><use href="#i-books"/></svg>Bibliotek</button>
+    <button class="rail-btn pressable" data-nav="player"><svg><use href="#i-headphones"/></svg>Spelar</button>
+    <button class="rail-btn pressable" data-nav="stats"><svg><use href="#i-chart"/></svg>Statistik</button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn pressable" data-nav="settings"><svg><use href="#i-settings"/></svg>Inställningar</button>
+  </nav>
+
+  <main class="views">
+    <!-- Bibliotek -->
+    <section class="view" id="view-library" aria-label="Bibliotek">
+      <div class="view-head">
+        <h1>Bibliotek</h1>
+        <div class="chips" id="filters">
+          <button class="chip pressable" data-filter="all">Alla</button>
+          <button class="chip pressable" data-filter="progress">Pågående</button>
+          <button class="chip pressable" data-filter="favorites"><svg viewBox="0 0 24 24"><path d="M12 20.3s-7.8-4.7-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.7-7.8 10.4-7.8 10.4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>Favoriter</button>
+          <button class="chip pressable" id="sortBtn" aria-label="Sortering"><svg><use href="#i-sort"/></svg><span id="sortLabel">Serie</span></button>
+        </div>
+      </div>
+      <div id="continue"></div>
+      <div id="library"></div>
+    </section>
+
+    <!-- Spelare -->
+    <section class="view" id="view-player" aria-label="Spelare">
+      <div class="no-book" id="noBook" hidden>
+        <div><h2>Ingen bok vald</h2><p>Välj en bok i biblioteket för att börja lyssna.</p>
+          <button class="btn pressable" data-nav="library"><svg><use href="#i-books"/></svg>Till biblioteket</button></div>
+      </div>
+      <div class="player" id="player" hidden>
+        <div class="cover player-cover" id="pCover"></div>
+        <div class="player-info">
+          <div class="player-top">
+            <div class="player-titles">
+              <div class="player-series" id="pSeries"></div>
+              <h1 class="player-title" id="pTitle"></h1>
+              <div class="player-author" id="pAuthor"></div>
+            </div>
+            <button class="fav pressable" id="pFav" aria-pressed="false" aria-label="Favorit"><svg viewBox="0 0 24 24"><path class="heart-fill" d="M12 20.3s-7.8-4.7-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.7-7.8 10.4-7.8 10.4z"/><path d="M12 20.3s-7.8-4.7-7.8-10.4A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.8 2.7c0 5.7-7.8 10.4-7.8 10.4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg></button>
+          </div>
+          <button class="chapter-btn pressable" id="chapterBtn"><svg><use href="#i-list"/></svg><span id="pChapter">–</span></button>
+          <div class="seek">
+            <div class="track smooth" id="track" role="slider" tabindex="0" aria-label="Position i kapitlet">
+              <div class="track-bg"></div><div class="track-fill" id="trackFill"></div><div class="track-knob" id="trackKnob"></div>
+            </div>
+            <div class="times"><span id="tNow">0:00</span><span id="tLeft">0:00</span></div>
+            <div class="book-left" id="bookLeft"></div>
+          </div>
+          <div class="controls">
+            <button class="ctrl pressable" id="prevBtn" aria-label="Föregående kapitel"><svg><use href="#i-prev"/></svg></button>
+            <button class="ctrl skip pressable" id="backBtn" aria-label="Spola tillbaka 15 sekunder"><svg><use href="#i-back"/></svg><small>15</small></button>
+            <button class="play pressable" id="playBtn" aria-label="Spela"><svg class="i-play"><use href="#i-play"/></svg><svg class="i-pause"><use href="#i-pause"/></svg></button>
+            <button class="ctrl skip pressable" id="fwdBtn" aria-label="Spola framåt 30 sekunder"><svg><use href="#i-fwd"/></svg><small>30</small></button>
+            <button class="ctrl pressable" id="nextBtn" aria-label="Nästa kapitel"><svg><use href="#i-next"/></svg></button>
+          </div>
+          <div class="player-extra">
+            <button class="pill pressable" id="sleepBtn"><svg><use href="#i-moon"/></svg><span id="sleepLabel">Sovtimer</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Statistik -->
+    <section class="view" id="view-stats" aria-label="Statistik">
+      <div class="view-head"><h1>Statistik</h1></div>
+      <div id="stats"></div>
+    </section>
+
+    <!-- Inställningar -->
+    <section class="view" id="view-settings" aria-label="Inställningar">
+      <div class="view-head"><h1>Inställningar</h1></div>
+      <div class="section">
+        <h2>Utseende</h2>
+        <p>Kvällsläget växlar automatiskt till mörkt tema mellan 19 och 7.</p>
+        <div class="chips" id="themeChips">
+          <button class="chip pressable" data-theme-opt="light">Ljust</button>
+          <button class="chip pressable" data-theme-opt="dark">Mörkt</button>
+          <button class="chip pressable" data-theme-opt="evening">Kväll</button>
+          <button class="chip pressable" data-theme-opt="system">System</button>
+        </div>
+      </div>
+      <div class="section">
+        <h2>Bibliotek</h2>
+        <p>Nya, ändrade och borttagna filer upptäcks automatiskt medan appen körs. Sök igenom mappen manuellt om något saknas. Lyssningspositioner och statistik påverkas inte.</p>
+        <button class="btn pressable" id="scanBtn"><svg><use href="#i-refresh"/></svg><span>Sök efter böcker</span></button>
+        <div class="scan-progress" id="scanProgress" hidden>
+          <div class="progress"><i id="scanFill"></i></div>
+        </div>
+        <div class="scan-text" id="scanText"></div>
+        <div class="muted" id="watchText"></div>
+      </div>
+    </section>
+
+    <!-- Miniuppspelare -->
+    <div class="mini hidden" id="mini">
+      <div class="cover" id="miniCover"></div>
+      <button class="mini-text" id="miniOpen"><span class="mini-title" id="miniTitle"></span><span class="mini-sub" id="miniSub"></span></button>
+      <button class="play pressable" id="miniPlay" aria-label="Spela"><svg class="i-play"><use href="#i-play"/></svg><svg class="i-pause"><use href="#i-pause"/></svg></button>
+      <div class="progress"><i id="miniFill"></i></div>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="chapterSheet" role="dialog" aria-label="Kapitel">
+  <div class="sheet-grip"></div><h2>Kapitel</h2><div class="sheet-body" id="chapterList"></div>
+</div>
+<div class="sheet" id="sleepSheet" role="dialog" aria-label="Sovtimer">
+  <div class="sheet-grip"></div><h2>Sovtimer</h2>
+  <div class="opt-row">
+    <button class="chip pressable" data-sleep="15">15 min</button>
+    <button class="chip pressable" data-sleep="30">30 min</button>
+    <button class="chip pressable" data-sleep="45">45 min</button>
+    <button class="chip pressable" data-sleep="60">60 min</button>
+    <button class="chip pressable" data-sleep="90">90 min</button>
+    <button class="chip pressable" data-sleep="0" id="sleepOff">Av</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/static/app.js?v=__V__"></script>
+</body>
+</html>

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtuella miljöer
+.venv/
+venv/
+env/
+
+# Hemligheter och lokal konfiguration
+.env
+config.local.json
+*.secret
+
+# Lokal data (väckartider, lyssningsposition m.m.)
+*.db
+*.sqlite3
+data/
+
+# Ljudböcker och andra stora mediafiler
+audiobooks/
+*.mp3
+*.m4b
+*.m4a
+*.flac
+*.ogg
+*.wav
+
+# Loggar
+*.log
+logs/
+
+# Editorer och IDE
+.vscode/
+.idea/
+
+# Operativsystem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node (om du bygger UI:t med npm)
+node_modules/
+
+# ignore the books directory
+books/
+
+*.jpg
+
+# Database backups written before schema migrations
+*.bak
+*.db-wal
+*.db-shm
+
+# Test cache
+.pytest_cache/
