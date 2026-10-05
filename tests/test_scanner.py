@@ -143,6 +143,21 @@ class TestScanner(ScannerTestCase):
         self.assertEqual(self.scanner.scan()["added"], 0)
         self.assertEqual(walk_library(self.books), {})
 
+    def test_offline_library_folder_keeps_books(self):
+        self.write("a.m4b")
+        self.write("Serie/b.m4b")
+        self.scanner.scan()
+        moved = Path(self.tmp.name) / "unplugged"
+        self.books.rename(moved)          # USB stick pulled / NAS share offline
+        result = self.scanner.scan()
+        self.assertTrue(result.get("offline"))
+        self.assertEqual(result["missing"], 0)
+        self.assertEqual(len(self.db.list_books()), 2)
+        moved.rename(self.books)
+        result = self.scanner.scan()
+        self.assertNotIn("offline", result)
+        self.assertEqual(result["unchanged"], 2)
+
     def test_covers_are_cached(self):
         self.write("a.m4b")
         self.scanner.scan()
@@ -248,6 +263,31 @@ class TestWatcher(unittest.TestCase):
 
     def test_polling_fallback(self):
         self._check(force_polling=True, poll_interval=0.2)
+
+    def test_missing_folder_is_not_created_and_is_polled(self):
+        books = self.dir / "mount"
+        watcher = LibraryWatcher(books, self.callback, debounce=0.3, poll_interval=0.2)
+        watcher.start()
+        try:
+            self.assertFalse(books.exists(), "watcher must not create an offline mount point")
+            self.assertEqual(watcher.mode, "polling")
+            books.mkdir()
+            (books / "a.m4b").write_bytes(b"x")
+            self.assertTrue(self.fired.wait(5), "folder appearing was not detected")
+        finally:
+            watcher.stop()
+
+
+class TestConfig(unittest.TestCase):
+    def test_watch_poll_env(self):
+        from unittest import mock
+        from config import Config
+        with mock.patch.dict(os.environ, {"ABP_WATCH_POLL": "1", "ABP_WATCH_POLL_INTERVAL": "15"}):
+            config = Config.from_env()
+        self.assertTrue(config.watch_poll)
+        self.assertEqual(config.watch_poll_interval, 15.0)
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertFalse(Config.from_env().watch_poll)
 
 
 if __name__ == "__main__":

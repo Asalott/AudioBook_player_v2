@@ -822,7 +822,9 @@ async function refreshScan() {
     if (r.restored) parts.push(`${r.restored} återfunna`);
     if (r.errors) parts.push(`${r.errors} kunde inte läsas`);
     const when = new Date(s.last_finished * 1000).toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
-    $("scanText").textContent = `Senaste sökning ${when}: ${parts.length ? parts.join(", ") : "inga ändringar"}.`;
+    $("scanText").textContent = r.offline
+      ? `Senaste sökning ${when}: bokmappen gick inte att nå (USB/NAS frånkopplad?). Biblioteket lämnades orört.`
+      : `Senaste sökning ${when}: ${parts.length ? parts.join(", ") : "inga ändringar"}.`;
     if (state.libVersion !== s.library_version) { state.libVersion = s.library_version; state.libDirty = true; }
   } else {
     $("scanText").textContent = "";

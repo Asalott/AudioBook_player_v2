@@ -41,6 +41,10 @@ class Config:
     scan_debounce: float = 5.0
     # Start the file system watcher (disabled in most tests).
     watch_library: bool = True
+    # Poll the library instead of using inotify. inotify does not see changes
+    # made by other machines on SMB/NFS shares.
+    watch_poll: bool = False
+    watch_poll_interval: float = 60.0
     # Fraction of a book that must be played for it to count as "listened".
     completion_threshold: float = 0.95
     log_level: str = "WARNING"
@@ -58,6 +62,8 @@ class Config:
             port=int(os.environ.get("ABP_PORT", "5000")),
             scan_debounce=_env_float("ABP_SCAN_DEBOUNCE", 5.0),
             watch_library=os.environ.get("ABP_WATCH", "1") != "0",
+            watch_poll=os.environ.get("ABP_WATCH_POLL", "0") not in ("0", ""),
+            watch_poll_interval=_env_float("ABP_WATCH_POLL_INTERVAL", 60.0),
             log_level=os.environ.get("ABP_LOG_LEVEL", "WARNING").upper(),
             nas_subdir=os.environ.get("ABP_NAS_SUBDIR", "NAS"),
         )

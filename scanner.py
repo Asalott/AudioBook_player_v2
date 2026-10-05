@@ -30,6 +30,19 @@ log = logging.getLogger(__name__)
 SETTLE_SECONDS = 3.0
 
 
+def library_reachable(books_dir):
+    """True if the library folder exists and can be listed.
+
+    A missing or unreadable folder usually means an unplugged USB stick or
+    an offline network share - not that every book was deleted.
+    """
+    try:
+        with os.scandir(books_dir):
+            return True
+    except OSError:
+        return False
+
+
 def walk_library(books_dir):
     """{relative posix path: (size, mtime)} for every audio file."""
     found = {}
@@ -144,6 +157,14 @@ class LibraryScanner:
             result = {"added": 0, "updated": 0, "missing": 0, "restored": 0,
                       "relinked": 0, "unchanged": 0, "skipped": 0, "errors": 0}
             self._progress(running=True, phase="listing", done=0, total=0, current=None)
+
+            if not library_reachable(self.config.books_dir):
+                # Don't flag the whole library as missing while the folder
+                # (USB stick, NAS share) is away; the next scan catches up.
+                log.warning("Library folder %s is not reachable, scan skipped", self.config.books_dir)
+                result.update(offline=True, seconds=round(time.monotonic() - started, 2), reason=reason)
+                self._progress(last_result=result, last_finished=self.clock(), phase="done")
+                return result
 
             on_disk = walk_library(self.config.books_dir)
             rows = {b["path"]: b for b in self.db.list_books(include_missing=True)}

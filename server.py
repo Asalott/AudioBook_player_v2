@@ -316,7 +316,9 @@ def create_app(config=None, backend_factory=None, start_background=True, nas_sou
         nas.start()
         if config.watch_library:
             state.watcher = LibraryWatcher(config.books_dir, lambda: scanner.scan_async("watcher"),
-                                           debounce=config.scan_debounce)
+                                           debounce=config.scan_debounce,
+                                           poll_interval=config.watch_poll_interval,
+                                           force_polling=config.watch_poll)
             try:
                 state.watcher.start()
             except Exception:

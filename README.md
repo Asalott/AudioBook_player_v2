@@ -53,6 +53,8 @@ Sätts i `~/.config/systemd/user/audiobook.service` (`Environment=...`):
 | `ABP_DATA_DIR` | appmappen | Var `books.db` och `covers/` ligger |
 | `ABP_HOST` / `ABP_PORT` | `127.0.0.1` / `5000` | |
 | `ABP_WATCH` | `1` | `0` stänger av filbevakningen |
+| `ABP_WATCH_POLL` | `0` | `1` = leta efter ändringar med jämna mellanrum i stället för inotify (behövs om `ABP_BOOKS_DIR` är en SMB/NFS-share) |
+| `ABP_WATCH_POLL_INTERVAL` | `60` | Sekunder mellan varje koll när `ABP_WATCH_POLL=1` |
 | `ABP_SCAN_DEBOUNCE` | `5` | Sekunder utan ändringar innan omskanning |
 | `ABP_LOG_LEVEL` | `WARNING` | |
 | `ABP_NAS_SUBDIR` | `NAS` | Undermapp i `books/` som NAS-böckerna kopieras till |

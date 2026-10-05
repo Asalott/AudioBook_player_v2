@@ -63,7 +63,12 @@ class LibraryWatcher:
         return "polling" if self.force_polling else "inotify/watchdog"
 
     def start(self):
-        self.books_dir.mkdir(parents=True, exist_ok=True)
+        if not self.books_dir.is_dir():
+            # Don't create the folder: it may be an offline mount point, and an
+            # empty local folder there would look like a deleted library.
+            # Polling notices when it shows up.
+            log.warning("Library folder %s does not exist yet, polling for it", self.books_dir)
+            self.force_polling = True
         if not self.force_polling:
             try:
                 self._observer = Observer()
