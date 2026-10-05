@@ -120,6 +120,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 500; margin: 0; letter-
   border: 1px solid var(--line); background: var(--surface);
   color: var(--ink-2); font-weight: 700; font-size: 14px;
   display: inline-flex; align-items: center; gap: 8px;
+  transition: transform .14s var(--ease), background-color .25s var(--ease), color .25s var(--ease), border-color .25s var(--ease);
 }
 .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: transparent; color: var(--accent-deep); }
 .chip svg { width: 18px; height: 18px; }
@@ -166,8 +167,11 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 500; margin: 0; letter-
   position: relative; aspect-ratio: 1; overflow: hidden; background: var(--surface-2);
   display: grid; place-items: center;
 }
-.cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .4s var(--ease); }
-.cover img.loaded { opacity: 1; }
+.cover img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+  opacity: 0; transform: scale(1.06); transition: opacity .4s var(--ease), transform .6s var(--ease);
+}
+.cover img.loaded { opacity: 1; transform: none; }
 .cover .ph { width: 42%; height: 42%; color: var(--ink-3); opacity: .6; }
 
 .progress { height: 5px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
@@ -204,6 +208,39 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 500; margin: 0; letter-
 }
 .prow-stats { grid-column: 3; }
 .prow-play { grid-column: 4; }
+
+/* "Spelas nu" equalizer */
+.eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; margin-right: 7px; vertical-align: -1px; }
+.eq i { width: 3px; height: 100%; border-radius: 1px; background: currentColor; transform-origin: bottom; animation: eq 1s ease-in-out infinite; }
+.eq i:nth-child(2) { animation-delay: -.45s; }
+.eq i:nth-child(3) { animation-delay: -.75s; }
+@keyframes eq { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+
+/* Library entrance: staggered by --i (set in app.js), only on deliberate
+   renders (first load, filter change) – never on background polls.
+   fill-mode backwards so :active/:hover transforms work once finished. */
+.animate-in .card,
+.animate-in > .continue { animation: rise-in .45s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.animate-in .prow { animation: slide-in .4s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 45ms); }
+.animate-in .series > h2 { animation: fade-in .4s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 40ms); }
+.animate-in .progress > i { animation: fill-in .9s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 40ms + 220ms); }
+.animate-in .badge { animation: pop-in .35s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 40ms + 300ms); }
+.animate-in .empty { animation: rise-in .4s var(--ease) backwards; }
+@keyframes rise-in { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+@keyframes slide-in { from { opacity: 0; transform: translateX(-18px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fill-in { from { transform: scaleX(0); } }
+@keyframes pop-in { from { opacity: 0; transform: scale(.5); } }
+
+/* Mouse only (the Pi touchscreen never hovers) */
+@media (hover: hover) {
+  .card, .prow, .continue { transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+  .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+  .card:hover .cover img.loaded { transform: scale(1.05); }
+  .card:active { transform: scale(.97); }
+  .prow:hover, .continue:hover { box-shadow: var(--shadow-md); }
+  .prow:hover > .cover img.loaded, .continue:hover > .cover img.loaded { transform: scale(1.05); }
+}
 
 .empty { text-align: center; color: var(--ink-2); padding: 48px 16px; }
 .empty h2 { color: var(--ink); margin-bottom: 8px; }
@@ -438,4 +475,5 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 500; margin: 0; letter-
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .eq i { animation: none; transform: scaleY(.65); }
 }

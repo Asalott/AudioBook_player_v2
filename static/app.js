@@ -119,6 +119,42 @@ function setCover(box, url) {
   box.appendChild(img);
 }
 
+/* Animations: only transform/opacity, and skipped entirely for reduced motion. */
+const EASE = "cubic-bezier(.2, .7, .2, 1)";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+
+// FLIP: books that stay glide from their old spot to the new one, new books
+// fade in. Only on-screen elements are animated to keep the Pi smooth.
+function flip(root, mutate) {
+  if (reduceMotion.matches) { mutate(); return; }
+  const sel = ".card, .prow";
+  const before = new Map();
+  root.querySelectorAll(sel).forEach((el) => before.set(el.dataset.id, el.getBoundingClientRect()));
+  mutate();
+  const vh = window.innerHeight;
+  root.querySelectorAll(sel).forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > vh) return;
+    const old = before.get(el.dataset.id);
+    if (!old) {
+      el.animate([{ opacity: 0, transform: "scale(.92)" }, { opacity: 1, transform: "none" }],
+        { duration: 320, easing: EASE, fill: "backwards" });
+      return;
+    }
+    const dx = old.left - r.left, dy = old.top - r.top;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    el.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: 420, easing: EASE });
+  });
+  root.querySelectorAll(".series > h2").forEach((t) =>
+    t.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, easing: EASE }));
+}
+
+function animateOut(el) {
+  if (!el || reduceMotion.matches) return Promise.resolve();
+  return el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(.85)" }],
+    { duration: 220, easing: "ease-in", fill: "forwards" }).finished.catch(() => {});
+}
+
 function progressEl(fraction) {
   const p = h("div", "progress");
   const i = h("i");
@@ -152,7 +188,10 @@ async function toggleFavorite(id, btn) {
     state.books.forEach((b) => { if (b.id === id) b.favorite = next; });
     if (state.book && state.book.id === id) state.book.favorite = next;
     syncFavButtons();
-    if (state.filter === "favorites") renderLibrary();
+    if (state.filter === "favorites") {
+      if (!next) await animateOut(btn.closest(".card"));
+      flip($("library"), () => renderLibrary());
+    }
   } catch (e) {
     btn.setAttribute("aria-pressed", String(!next));
     toast(e.message);
@@ -201,9 +240,12 @@ const SORTS = [
 
 async function loadBooks() {
   try {
+    const first = !state.books.length;
     state.books = await api("/api/books");
     state.libDirty = false;
-    renderLibrary();
+    // First load: staggered entrance. Later (scanner found changes): glide.
+    if (first) renderLibrary(true);
+    else flip($("library"), () => renderLibrary());
   } catch (e) {
     $("library").replaceChildren(emptyState("Kunde inte läsa biblioteket", e.message));
   }
@@ -308,13 +350,18 @@ async function resumeBook(id) {
   }
 }
 
-function renderLibrary() {
+// animate=true plays the staggered entrance (first load, filter change).
+// Background re-renders (status polls) pass nothing and stay still.
+function renderLibrary(animate) {
   document.querySelectorAll("#filters [data-filter]").forEach((c) =>
     c.setAttribute("aria-pressed", String(c.dataset.filter === state.filter)));
   $("sortLabel").textContent = SORTS.find((s) => s[0] === state.sort)[1];
 
-  renderContinue();
+  renderContinue(animate);
   const root = $("library");
+  root.classList.toggle("animate-in", !!animate && !reduceMotion.matches);
+  let n = state.filter === "all" && $("continue").childElementCount ? 1 : 0;
+  const stagger = (el, step) => { el.style.setProperty("--i", Math.min(n, 14)); if (step) n++; };
   const books = filteredBooks();
   if (!state.books.length) {
     const btn = h("button", "btn pressable");
@@ -332,7 +379,7 @@ function renderLibrary() {
   const frag = document.createDocumentFragment();
   if (state.filter === "progress") {
     const list = h("div", "prow-list");
-    books.forEach((b) => list.appendChild(progressRow(b)));
+    books.forEach((b) => { const r = progressRow(b); stagger(r, true); list.appendChild(r); });
     frag.appendChild(list);
   } else if (state.sort === "series") {
     const groups = new Map();
@@ -345,27 +392,51 @@ function renderLibrary() {
       const sec = h("section", "series");
       const title = h("h2", null, name);
       title.appendChild(h("small", null, list.length === 1 ? "1 bok" : list.length + " böcker"));
+      stagger(title, false);
       const grid = h("div", "grid");
-      list.forEach((b) => grid.appendChild(bookCard(b)));
+      list.forEach((b) => { const c = bookCard(b); stagger(c, true); grid.appendChild(c); });
       sec.append(title, grid);
       frag.appendChild(sec);
     });
   } else {
     const grid = h("div", "grid");
-    books.forEach((b) => grid.appendChild(bookCard(b)));
+    books.forEach((b) => { const c = bookCard(b); stagger(c, true); grid.appendChild(c); });
     frag.appendChild(grid);
   }
   root.replaceChildren(frag);
 }
 
-function renderContinue() {
+function continueLabel(el) {
+  const playing = !!state.status.playing;
+  el.replaceChildren();
+  if (playing) {
+    const eq = h("span", "eq");
+    eq.append(h("i"), h("i"), h("i"));
+    el.appendChild(eq);
+  }
+  el.appendChild(document.createTextNode(playing ? "Spelas nu" : "Fortsätt lyssna"));
+}
+
+function renderContinue(animate) {
   const box = $("continue");
   const cur = state.status.book_id != null && state.books.find((b) => b.id === state.status.book_id);
   if (!cur || state.filter !== "all") { box.replaceChildren(); return; }
+  box.classList.toggle("animate-in", !!animate && !reduceMotion.matches);
+  const existing = box.firstElementChild;
+  if (!animate && existing && existing.dataset.id === String(cur.id)) {
+    // Same book: update in place so the play/pause icon can morph.
+    continueLabel(existing.querySelector(".continue-label"));
+    existing.querySelector(".play").classList.toggle("on", !!state.status.playing);
+    updateMini();
+    return;
+  }
   const card = h("div", "continue");
+  card.dataset.id = cur.id;
   card.appendChild(coverEl(cur.cover_small));
   const text = h("div");
-  text.append(h("div", "continue-label", state.status.playing ? "Spelas nu" : "Fortsätt lyssna"),
+  const label = h("div", "continue-label");
+  continueLabel(label);
+  text.append(label,
     h("div", "continue-title", cur.title),
     h("div", "continue-meta", `${cur.author || ""} · ${fmtPercent(cur.progress)}`));
   text.appendChild(progressEl(cur.progress));
@@ -390,16 +461,21 @@ function playButton() {
 
 $("filters").addEventListener("click", (e) => {
   const chip = e.target.closest("[data-filter]");
-  if (!chip) return;
+  if (!chip || chip.dataset.filter === state.filter) return;
   state.filter = chip.dataset.filter;
   store.set("abp-filter", state.filter);
-  renderLibrary();
+  $("view-library").scrollTop = 0;
+  renderLibrary(true);
 });
 $("sortBtn").addEventListener("click", () => {
   const i = SORTS.findIndex((s) => s[0] === state.sort);
   state.sort = SORTS[(i + 1) % SORTS.length][0];
   store.set("abp-sort", state.sort);
-  renderLibrary();
+  if (!reduceMotion.matches) {
+    $("sortBtn").querySelector("svg").animate([{ transform: "rotate(0)" }, { transform: "rotate(180deg)" }], { duration: 380, easing: EASE });
+    $("sortLabel").animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: EASE });
+  }
+  flip($("library"), () => renderLibrary());
 });
 
 async function openBook(id) {
