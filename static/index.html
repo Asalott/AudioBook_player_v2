@@ -125,6 +125,43 @@
         <div class="scan-text" id="scanText"></div>
         <div class="muted" id="watchText"></div>
       </div>
+      <div class="section" id="nasSection">
+        <h2>Hämta från NAS</h2>
+        <p>Böcker i en mapp på din NAS (SMB) kopieras till spelaren, så de går att lyssna på även när NAS:en inte går att nå. Bara nya och ändrade filer hämtas.</p>
+        <form class="form" id="nasForm" autocomplete="off">
+          <label class="field field-wide"><span>Adress till mappen</span>
+            <input id="nasAddress" type="text" placeholder="\\nas\media\Ljudböcker" spellcheck="false" autocapitalize="off"></label>
+          <label class="field"><span>Användarnamn</span>
+            <input id="nasUser" type="text" spellcheck="false" autocapitalize="off"></label>
+          <label class="field"><span>Lösenord</span>
+            <input id="nasPass" type="password" autocomplete="new-password"></label>
+          <div class="field field-wide"><span>Hämta automatiskt</span>
+            <div class="chips" id="nasPreset">
+              <button type="button" class="chip pressable" data-preset="off">Av</button>
+              <button type="button" class="chip pressable" data-preset="1-day">Varje dag</button>
+              <button type="button" class="chip pressable" data-preset="1-week">Varje vecka</button>
+              <button type="button" class="chip pressable" data-preset="1-month">Varje månad</button>
+              <button type="button" class="chip pressable" data-preset="custom">Eget</button>
+            </div>
+          </div>
+          <div class="field-row" id="nasSchedule">
+            <label class="field field-inline" id="nasCustom"><span>Intervall</span>
+              <input id="nasEvery" type="number" min="1" max="365" value="2" inputmode="numeric">
+              <select id="nasUnit"><option value="day">dagar</option><option value="week">veckor</option><option value="month">månader</option></select></label>
+            <label class="field field-inline"><span>kl.</span><input id="nasTime" type="time" value="03:00"></label>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn pressable" id="nasSave"><span>Spara</span></button>
+            <button type="button" class="btn btn-quiet pressable" id="nasTest"><span>Testa anslutningen</span></button>
+            <button type="button" class="btn btn-quiet pressable" id="nasSync"><svg><use href="#i-refresh"/></svg><span>Hämta nu</span></button>
+          </div>
+        </form>
+        <div class="scan-progress" id="nasProgress" hidden>
+          <div class="progress"><i id="nasFill"></i></div>
+        </div>
+        <div class="scan-text" id="nasText"></div>
+        <div class="muted" id="nasNext"></div>
+      </div>
     </section>
 
     <!-- Miniuppspelare -->

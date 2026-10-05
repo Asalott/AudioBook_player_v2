@@ -184,7 +184,7 @@ function show(view) {
   updateMini();
   if (view === "library" && state.libDirty) loadBooks();
   if (view === "stats") loadStats();
-  if (view === "settings") refreshScan();
+  if (view === "settings") { refreshScan(); loadNas(); }
   if (view === "player") { renderPlayer(); measureTrack(); }
   schedulePoll(0);
 }
@@ -829,6 +829,120 @@ async function refreshScan() {
   }
   $("watchText").textContent = s.watching ? `Bevakar mappen (${s.watching}).` : "Automatisk bevakning är avstängd.";
 }
+
+/* ------------------------------------------------------------ NAS */
+let nasTimer = null;
+let nasPreset = "off";
+function fmtBytes(n) {
+  if (n >= 1024 ** 3) return (n / 1024 ** 3).toFixed(1).replace(".", ",") + " GB";
+  return Math.round(n / 1024 ** 2) + " MB";
+}
+function fmtWhen(ts) {
+  const d = new Date(ts * 1000);
+  const today = new Date(), tomorrow = new Date(Date.now() + 864e5);
+  const clock = d.toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === today.toDateString()) return "i dag " + clock;
+  if (d.toDateString() === tomorrow.toDateString()) return "i morgon " + clock;
+  return d.toLocaleDateString("sv-SE", { day: "numeric", month: "short" }) + " " + clock;
+}
+function setNasPreset(p) {
+  nasPreset = p;
+  document.querySelectorAll("[data-preset]").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.preset === p)));
+  $("nasSchedule").hidden = p === "off";
+  $("nasCustom").hidden = p !== "custom";
+}
+function nasSchedule() {
+  if (nasPreset === "off") return null;
+  let every = 1, unit = nasPreset.split("-")[1];
+  if (nasPreset === "custom") { every = parseInt($("nasEvery").value, 10); unit = $("nasUnit").value; }
+  return { every, unit, time: $("nasTime").value || "03:00" };
+}
+function nasFields() {
+  const data = { address: $("nasAddress").value.trim(), username: $("nasUser").value.trim() };
+  if ($("nasPass").value) data.password = $("nasPass").value;
+  return data;
+}
+async function loadNas() {
+  let s;
+  try { s = await api("/api/nas"); } catch (e) { return; }
+  $("nasAddress").value = s.address || "";
+  $("nasUser").value = s.username || "";
+  $("nasPass").value = "";
+  $("nasPass").placeholder = s.has_password ? "•••••• (sparat)" : "";
+  const sc = s.schedule;
+  if (sc) {
+    $("nasTime").value = sc.time;
+    $("nasEvery").value = sc.every;
+    $("nasUnit").value = sc.unit;
+    setNasPreset(sc.every === 1 ? "1-" + sc.unit : "custom");
+  } else setNasPreset("off");
+  renderNas(s);
+}
+function renderNas(s) {
+  clearTimeout(nasTimer);
+  const btn = $("nasSync");
+  btn.disabled = s.running;
+  btn.classList.toggle("spin", s.running);
+  btn.querySelector("span").textContent = s.running ? "Hämtar…" : "Hämta nu";
+  $("nasProgress").hidden = !s.running;
+  const text = $("nasText");
+  text.classList.remove("error");
+  if (s.running) {
+    $("nasFill").style.transform = `scaleX(${s.bytes_total ? s.bytes_done / s.bytes_total : 0})`;
+    text.textContent = s.phase === "copying" && s.total
+      ? `Hämtar ${Math.min(s.done + 1, s.total)} av ${s.total} (${fmtBytes(s.bytes_done)} av ${fmtBytes(s.bytes_total)})${s.current ? " – " + s.current : ""}`
+      : s.phase === "listing" ? "Läser mappen på NAS:en…" : "Ansluter…";
+    nasTimer = setTimeout(refreshNas, 700);
+  } else if (s.error) {
+    text.textContent = s.error;
+    text.classList.add("error");
+  } else if (s.last_result) {
+    const r = s.last_result;
+    const parts = [r.copied ? `${r.copied} nya eller ändrade (${fmtBytes(r.bytes)})` : "inga nya böcker"];
+    if (r.errors) parts.push(`${r.errors} kunde inte hämtas`);
+    text.textContent = `Senaste hämtning ${fmtWhen(s.last_finished)}: ${parts.join(", ")}.`;
+  } else if (s.last_success) {
+    text.textContent = `Senast hämtat ${fmtWhen(s.last_success)}.`;
+  } else text.textContent = "";
+  $("nasNext").textContent = s.next_run ? `Nästa automatiska hämtning: ${fmtWhen(s.next_run)}. Böckerna sparas i mappen ${s.target}/.` : "";
+}
+async function refreshNas() {
+  try { renderNas(await api("/api/nas")); } catch (e) { /* offline */ }
+}
+$("nasPreset").addEventListener("click", (e) => {
+  const c = e.target.closest("[data-preset]");
+  if (c) setNasPreset(c.dataset.preset);
+});
+$("nasForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (nasPreset === "custom" && !(parseInt($("nasEvery").value, 10) >= 1)) { toast("Ange hur ofta i hela dagar, veckor eller månader"); return; }
+  try {
+    const s = await api("/api/nas", { ...nasFields(), schedule: nasSchedule() });
+    $("nasPass").value = "";
+    $("nasPass").placeholder = s.has_password ? "•••••• (sparat)" : "";
+    renderNas(s);
+    toast("Sparat");
+  } catch (err) { toast(err.message); }
+});
+$("nasTest").addEventListener("click", async () => {
+  const btn = $("nasTest");
+  btn.disabled = true;
+  btn.querySelector("span").textContent = "Testar…";
+  try {
+    const r = await api("/api/nas/test", nasFields());
+    toast(`Anslutningen fungerar: ${r.files} ljudfiler (${fmtBytes(r.bytes)})`);
+  } catch (err) { toast(err.message); }
+  btn.disabled = false;
+  btn.querySelector("span").textContent = "Testa anslutningen";
+});
+$("nasSync").addEventListener("click", async () => {
+  try {
+    // Save first so "Hämta nu" uses what is in the form.
+    await api("/api/nas", nasFields());
+    $("nasPass").value = "";
+    renderNas(await api("/api/nas/sync", {}));
+  } catch (err) { toast(err.message); }
+});
 
 /* ------------------------------------------------------------ theme */
 function resolveTheme(pref) {

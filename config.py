@@ -44,6 +44,8 @@ class Config:
     # Fraction of a book that must be played for it to count as "listened".
     completion_threshold: float = 0.95
     log_level: str = "WARNING"
+    # Subfolder of books_dir that books fetched from the NAS are copied to.
+    nas_subdir: str = "NAS"
 
     @classmethod
     def from_env(cls):
@@ -57,4 +59,5 @@ class Config:
             scan_debounce=_env_float("ABP_SCAN_DEBOUNCE", 5.0),
             watch_library=os.environ.get("ABP_WATCH", "1") != "0",
             log_level=os.environ.get("ABP_LOG_LEVEL", "WARNING").upper(),
+            nas_subdir=os.environ.get("ABP_NAS_SUBDIR", "NAS"),
         )

@@ -13,6 +13,7 @@ import covers
 from config import BASE_DIR, Config
 from database import Database, _pure_path
 from library import read_metadata
+from nas_sync import NasError, NasSync
 from playback import PlaybackError, PlaybackService
 from scanner import LibraryScanner
 from stats import StatsRecorder
@@ -30,7 +31,7 @@ def _number(data, key, default=None):
     return value
 
 
-def create_app(config=None, backend_factory=None, start_background=True):
+def create_app(config=None, backend_factory=None, start_background=True, nas_source_factory=None):
     config = config or Config.from_env()
     if backend_factory is None:
         from player import VlcBackend
@@ -40,12 +41,13 @@ def create_app(config=None, backend_factory=None, start_background=True):
     playback = PlaybackService(db, config, backend_factory)
     scanner = LibraryScanner(db, config, playback)
     stats = StatsRecorder(db, config)
+    nas = NasSync(db, config, scanner, **({"source_factory": nas_source_factory} if nas_source_factory else {}))
     playback.add_listener(stats.on_event)
 
     app = Flask(__name__, static_folder=str(STATIC_DIR), static_url_path="/static")
     app.json.ensure_ascii = False
     app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 3600
-    state = SimpleNamespace(config=config, db=db, playback=playback, scanner=scanner, stats=stats, watcher=None)
+    state = SimpleNamespace(config=config, db=db, playback=playback, scanner=scanner, stats=stats, nas=nas, watcher=None)
     app.extensions["audiobook"] = state
     cover_lock = threading.Lock()
 
@@ -85,6 +87,10 @@ def create_app(config=None, backend_factory=None, start_background=True):
     @app.errorhandler(PlaybackError)
     def playback_error(e):
         return jsonify({"status": "error", "message": str(e)}), e.status
+
+    @app.errorhandler(NasError)
+    def nas_error(e):
+        return jsonify({"status": "error", "message": str(e)}), 400
 
     # --------------------------------------------------------------- pages
     @app.get("/")
@@ -277,6 +283,29 @@ def create_app(config=None, backend_factory=None, start_background=True):
         data["watching"] = state.watcher.mode if state.watcher is not None else None
         return jsonify(data)
 
+    # ----------------------------------------------------------------- NAS
+    @app.get("/api/nas")
+    def get_nas():
+        return jsonify({**nas.public_settings(), **nas.status()})
+
+    @app.post("/api/nas")
+    def set_nas():
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            raise NasError("Ogiltig förfrågan")
+        nas.save_settings(data)
+        return jsonify({**nas.public_settings(), **nas.status()})
+
+    @app.post("/api/nas/test")
+    def test_nas():
+        data = request.get_json(silent=True)
+        return jsonify(nas.test(data if isinstance(data, dict) else None))
+
+    @app.post("/api/nas/sync")
+    def sync_nas():
+        result = nas.sync_async("manual")
+        return jsonify({"status": result, **nas.status()}), 202
+
     # --------------------------------------------------------- background
     # Startup deliberately does *not* scan the library: the app starts
     # straight from the database. The watcher picks up changes made while
@@ -284,6 +313,7 @@ def create_app(config=None, backend_factory=None, start_background=True):
     if start_background:
         playback.restore_last_book()
         playback.start()
+        nas.start()
         if config.watch_library:
             state.watcher = LibraryWatcher(config.books_dir, lambda: scanner.scan_async("watcher"),
                                            debounce=config.scan_debounce)
@@ -300,6 +330,7 @@ def shutdown_app(app):
     state = app.extensions["audiobook"]
     if state.watcher is not None:
         state.watcher.stop()
+    state.nas.shutdown()
     if state.scanner is not None:
         state.scanner.shutdown()
     state.playback.shutdown()

@@ -386,6 +386,23 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: 500; margin: 0; letter-
 .scan-progress .progress > i { transition: transform .3s var(--ease); }
 .scan-text { color: var(--ink-2); font-size: 13.5px; margin-top: 8px; min-height: 20px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .muted { color: var(--ink-3); font-size: 13px; }
+.scan-text.error { color: var(--danger); white-space: normal; }
+.btn-quiet { background: var(--surface-2); color: var(--ink); }
+.form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field > span { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+.field-wide, .field-row, .form-actions { grid-column: 1 / -1; }
+.field-row { display: flex; flex-wrap: wrap; gap: 12px 18px; }
+.field-inline { flex-direction: row; align-items: center; gap: 10px; }
+.field input, .field select {
+  min-height: 48px; padding: 0 14px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); font: inherit; min-width: 0; width: 100%;
+}
+.field-inline input, .field-inline select { width: auto; }
+.field-inline input[type="number"] { width: 84px; }
+.field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+@media (max-width: 560px) { .form { grid-template-columns: 1fr; } }
 
 /* ------------------------------------------------------------ toast */
 .toast {

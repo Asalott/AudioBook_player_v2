@@ -3,3 +3,4 @@ python-vlc>=3.0
 mutagen>=1.47
 watchdog>=4.0
 Pillow>=10.0
+smbprotocol>=1.13

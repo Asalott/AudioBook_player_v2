@@ -14,6 +14,7 @@ med VLC för uppspelning och ett webbgränssnitt som körs i Chromium i kiosklä
 | `database.py` | SQLite (WAL) med versionerade migreringar och automatisk backup. |
 | `scanner.py` | Inkrementell biblioteksskanning i bakgrunden. |
 | `watcher.py` | Filbevakning (inotify via watchdog) med debounce. |
+| `nas_sync.py` | Hämtar böcker från en NAS (SMB), manuellt eller enligt schema. |
 | `stats.py` | Lyssningstid, antal genomlyssningar, topplista. |
 | `library.py` / `covers.py` | Metadata, kapitel (ffprobe) och nedskalade omslag. |
 | `static/` | Gränssnittet (bibliotek, spelare, statistik, inställningar). |
@@ -54,6 +55,27 @@ Sätts i `~/.config/systemd/user/audiobook.service` (`Environment=...`):
 | `ABP_WATCH` | `1` | `0` stänger av filbevakningen |
 | `ABP_SCAN_DEBOUNCE` | `5` | Sekunder utan ändringar innan omskanning |
 | `ABP_LOG_LEVEL` | `WARNING` | |
+| `ABP_NAS_SUBDIR` | `NAS` | Undermapp i `books/` som NAS-böckerna kopieras till |
+
+### Hämta böcker från en NAS
+
+Under *Inställningar → Hämta från NAS* anger du adressen till mappen på NAS:en
+(`\\nas\media\Ljudböcker`, `//192.168.1.10/media/Ljudböcker` eller
+`smb://nas:445/media/Ljudböcker`) samt användarnamn och lösenord. *Testa
+anslutningen* räknar ljudfilerna utan att kopiera något, *Hämta nu* startar en
+hämtning, och under *Hämta automatiskt* väljer du varje dag/vecka/månad eller
+ett eget intervall och en tid.
+
+* Böckerna **kopieras** till `books/NAS/`, så de går att lyssna på även när
+  NAS:en, nätverket eller VPN:en är nere. Bara nya och ändrade filer hämtas.
+* Filer som tas bort från NAS:en ligger kvar i spelaren.
+* Om NAS:en inte går att nå vid en schemalagd hämtning görs ett nytt försök
+  efter en timme. Var spelaren avstängd vid den tiden hämtas det direkt vid start.
+* Hämtningen avbryts innan den börjar om det inte finns plats (200 MB lämnas fritt).
+* Lösenordet sparas okrypterat i `books.db` och skickas aldrig tillbaka till
+  gränssnittet.
+* En adress utan `\\`/`//`/`smb://` tolkas som en vanlig mapp, t.ex. en
+  delning som redan är monterad via `/etc/fstab`.
 
 ### Tips för Pi:n
 
